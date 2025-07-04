@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Thinking Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .question-section {
+            margin-bottom: 30px;
+        }
+
+        .question-section label {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .question-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .response-section {
+            margin-top: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4facfe;
+            display: none;
+        }
+
+        .response-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .response-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .response-content {
+            line-height: 1.6;
+            color: #555;
+            white-space: pre-wrap;
+            font-size: 1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .tts-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tts-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .response-header h3 {
+            margin: 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffe6e6;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .examples {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .examples h4 {
+            color: #0c5460;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .examples ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .examples li {
+            padding: 8px 0;
+            color: #155724;
+            border-bottom: 1px solid #c3e6cb;
+        }
+
+        .examples li:last-child {
+            border-bottom: none;
+        }
+
+        .examples li::before {
+            content: "💡 ";
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Critical Thinking Assistant</h1>
+            <p>Ask questions and get guided thinking processes instead of direct answers</p>
+        </div>
+        
+        <div class="content">
+            <div class="examples">
+                <h4>Example Questions:</h4>
+                <ul>
+                    <li>How do I implement a binary search algorithm?</li>
+                    <li>What's the best way to design a database for an e-commerce system?</li>
+                    <li>How can I optimize the performance of my web application?</li>
+                    <li>What design patterns should I use for this project?</li>
+                    <li>How do I handle error handling in my code?</li>
+                </ul>
+            </div>
+
+            <form id="questionForm">
+                <div class="question-section">
+                    <label for="question">What would you like help thinking through?</label>
+                    <textarea 
+                        id="question" 
+                        name="question" 
+                        class="question-input" 
+                        placeholder="Enter your programming question or problem you're trying to solve..."
+                        required
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Get Thinking Guidance
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>AI is analyzing your question and preparing thinking guidance...</p>
+            </div>
+
+            <div class="response-section" id="responseSection">
+                <div class="response-header">
+                    <h3>💭 Thinking Process & Guidance</h3>
+                    <button id="ttsButton" class="tts-button" style="display: none;">
+                        🔊 Listen
+                    </button>
+                </div>
+                <div class="response-content" id="responseContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000'; // Change this to your Flask app URL
+
+        document.getElementById('questionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const question = document.getElementById('question').value.trim();
+            if (!question) {
+                alert('Please enter a question first!');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const responseSection = document.getElementById('responseSection');
+            const responseContent = document.getElementById('responseContent');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            loading.classList.add('show');
+            responseSection.classList.remove('show');
+            responseSection.classList.remove('error');
+            // Hide TTS button during loading
+            document.getElementById('ttsButton').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/criticalThinking`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show the AI response
+                    responseContent.textContent = data.response;
+                    responseSection.classList.add('show');
+                    // Show TTS button after successful response
+                    document.getElementById('ttsButton').style.display = 'flex';
+                } else {
+                    // Error from API
+                    responseContent.textContent = `Error: ${data.error || 'Something went wrong'}`;
+                    responseSection.classList.add('show', 'error');
+                }
+
+            } catch (error) {
+                // Network or other error
+                console.error('Error:', error);
+                responseContent.textContent = `Network Error: ${error.message}. Make sure your Flask app is running on ${API_BASE_URL}`;
+                responseSection.classList.add('show', 'error');
+            } finally {
+                // Reset UI state
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Get Thinking Guidance';
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('question').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(120, this.scrollHeight) + 'px';
+        });
+
+        // Allow Ctrl+Enter to submit
+        document.getElementById('question').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('questionForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // TTS Integration
+        const TTS_API_URL = 'http://localhost:5001';
+        let currentAudio = null;
+        let isPlaying = false;
+
+        // TTS Button Event Listener
+        document.getElementById('ttsButton').addEventListener('click', async function() {
+            const button = this;
+            const responseText = document.getElementById('responseContent').textContent;
+            
+            if (!responseText || responseText.trim().length === 0) {
+                alert('No text to read!');
+                return;
+            }
+
+            if (isPlaying) {
+                stopTTS();
+                return;
+            }
+
+            try {
+                button.disabled = true;
+                button.innerHTML = '⏳ Loading...';
+
+                // Try Azure TTS first
+                const response = await fetch(`${TTS_API_URL}/api/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: responseText,
+                        voice: 'en-US-AriaNeural',
+                        preprocess: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('audio')) {
+                    // Azure TTS returned audio
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.onended = () => stopTTS();
+                    currentAudio.onerror = () => fallbackToBrowserTTS(responseText, button);
+                    
+                    await currentAudio.play();
+                    setPlayingState(true, button);
+                    
+                } else {
+                    // Fallback response from API
+                    const data = await response.json();
+                    if (data.fallback) {
+                        fallbackToBrowserTTS(data.text, button);
+                    } else {
+                        throw new Error(data.error || 'TTS failed');
+                    }
+                }
+
+            } catch (error) {
+                console.error('TTS error:', error);
+                // Fallback to browser TTS
+                fallbackToBrowserTTS(responseText, button);
+            }
+        });
+
+        function fallbackToBrowserTTS(text, button) {
+            if (!('speechSynthesis' in window)) {
+                alert('Text-to-speech not supported in this browser');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+                return;
+            }
+
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                // Try to find a good voice
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+                
+                utterance.onend = () => stopTTS();
+                utterance.onerror = () => {
+                    alert('Speech synthesis failed');
+                    stopTTS();
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                setPlayingState(true, button);
+                
+            } catch (error) {
+                console.error('Browser TTS error:', error);
+                alert('Speech synthesis failed');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+            }
+        }
+
+        function setPlayingState(playing, button) {
+            isPlaying = playing;
+            if (playing) {
+                button.innerHTML = '⏹️ Stop';
+                button.disabled = false;
+            } else {
+                button.innerHTML = '🔊 Listen';
+                button.disabled = false;
+            }
+        }
+
+        function stopTTS() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            
+            setPlayingState(false, document.getElementById('ttsButton'));
+        }
+    </script>
+</body>
+</html>

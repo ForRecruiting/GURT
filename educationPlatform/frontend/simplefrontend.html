@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Grader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 50%, #6c5ce7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .content {
+            padding: 50px;
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-section:hover {
+            border-color: #74b9ff;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            transform: translateY(-2px);
+        }
+
+        .upload-section.dragover {
+            border-color: #0984e3;
+            background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #74b9ff;
+        }
+
+        .upload-section h3 {
+            font-size: 1.5rem;
+            color: #2d3436;
+            margin-bottom: 10px;
+        }
+
+        .upload-section p {
+            color: #636e72;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
+        .file-input-label {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(116, 185, 255, 0.3);
+        }
+
+        .selected-file {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            color: #155724;
+            font-weight: 500;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 184, 148, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .submit-btn:disabled::before {
+            display: none;
+        }
+
+        .status-section {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .status-section.processing {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .status-section.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-section.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #74b9ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border-left: 5px solid #74b9ff;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .result-section h3 {
+            color: #2d3436;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .result-section h3::before {
+            content: "📝";
+            margin-right: 12px;
+            font-size: 1.6rem;
+        }
+
+        .result-content {
+            line-height: 1.8;
+            color: #555;
+            white-space: pre-wrap;
+            font-size: 1.05rem;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .error-result {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+            border-left-color: #dc3545;
+        }
+
+        .error-result h3::before {
+            content: "❌";
+        }
+
+        .error-result .result-content {
+            background: #fff5f5;
+            color: #721c24;
+        }
+
+        .tts-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tts-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .result-header h3 {
+            margin: 0;
+        }
+
+        .instructions {
+            background: linear-gradient(135deg, #e8f4fd 0%, #cfe2ff 100%);
+            border: 1px solid #b8daff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .instructions h4 {
+            color: #004085;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .instructions h4::before {
+            content: "ℹ️";
+            margin-right: 8px;
+        }
+
+        .instructions ul {
+            color: #004085;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 30px;
+            }
+            
+            .header {
+                padding: 30px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .upload-section {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Code Grader</h1>
+            <p>Upload your coding assignments and get instant AI-powered feedback<br>
+            Professional grading with detailed analysis and improvement suggestions</p>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h4>How it works</h4>
+                <ul>
+                    <li>📁 Create a ZIP file containing your code files</li>
+                    <li>📤 Upload the ZIP file using the area below</li>
+                    <li>🤖 Our AI assistant will analyze your code</li>
+                    <li>📊 Receive detailed feedback and grading</li>
+                </ul>
+            </div>
+
+            <form id="uploadForm">
+                <div class="upload-section" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drop your ZIP file here</h3>
+                    <p>or click to browse and select a file</p>
+                    
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" class="file-input" accept=".zip" required>
+                        <label for="fileInput" class="file-input-label">
+                            📂 Choose ZIP File
+                        </label>
+                    </div>
+                    
+                    <div id="selectedFile" class="selected-file" style="display: none;"></div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 Upload and Grade My Code
+                </button>
+            </form>
+
+            <div class="status-section" id="statusSection">
+                <div class="spinner" id="spinner" style="display: none;"></div>
+                <div id="statusText"></div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <h3>Grading Results & Feedback</h3>
+                    <button id="ttsButton" class="tts-button" style="display: none;">
+                        🔊 Listen
+                    </button>
+                </div>
+                <div class="result-content" id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusSection = document.getElementById('statusSection');
+        const statusText = document.getElementById('statusText');
+        const spinner = document.getElementById('spinner');
+        const resultSection = document.getElementById('resultSection');
+        const resultContent = document.getElementById('resultContent');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.toLowerCase().endsWith('.zip')) {
+                fileInput.files = files;
+                showSelectedFile(files[0]);
+            } else {
+                alert('Please drop a ZIP file');
+            }
+        });
+
+        // Click to upload
+        uploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        // File selection handler
+        fileInput.addEventListener('change', function() {
+            if (this.files[0]) {
+                showSelectedFile(this.files[0]);
+            }
+        });
+
+        function showSelectedFile(file) {
+            selectedFileDiv.style.display = 'block';
+            selectedFileDiv.innerHTML = `
+                <strong>✅ Selected:</strong> ${file.name} 
+                <small>(${(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+            `;
+        }
+
+        // Form submission
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a ZIP file first!');
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🔄 Processing...';
+            statusSection.className = 'status-section show processing';
+            statusText.textContent = 'Uploading file and initializing AI analysis...';
+            spinner.style.display = 'block';
+            resultSection.classList.remove('show');
+            resultSection.classList.remove('error-result');
+            // Hide TTS button during processing
+            document.getElementById('ttsButton').style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                // Update status during processing
+                setTimeout(() => {
+                    statusText.textContent = 'AI is analyzing your code structure...';
+                }, 2000);
+                
+                setTimeout(() => {
+                    statusText.textContent = 'Generating detailed feedback and grading...';
+                }, 5000);
+                
+                const response = await fetch('http://127.0.0.1:5000/pregrade', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    statusSection.className = 'status-section show success';
+                    statusText.textContent = '✅ Analysis Complete! Check your results below.';
+                    spinner.style.display = 'none';
+                    
+                    resultContent.textContent = data.feedback || 'No feedback received';
+                    resultSection.classList.add('show');
+                    // Show TTS button after successful response
+                    document.getElementById('ttsButton').style.display = 'flex';
+                } else {
+                    // Error from API
+                    statusSection.className = 'status-section show error';
+                    statusText.textContent = '❌ Error occurred during analysis';
+                    spinner.style.display = 'none';
+                    
+                    resultContent.textContent = data.error || 'Unknown error occurred';
+                    resultSection.classList.add('show', 'error-result');
+                }
+            } catch (error) {
+                // Network error
+                console.error('Error:', error);
+                statusSection.className = 'status-section show error';
+                statusText.textContent = '🌐 Network error occurred';
+                spinner.style.display = 'none';
+                
+                resultContent.textContent = `Network Error: ${error.message}. Make sure your Flask app is running on http://127.0.0.1:5000`;
+                resultSection.classList.add('show', 'error-result');
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Upload and Grade My Code';
+            }
+        });
+
+        // Prevent default drag behaviors on the document
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+        });
+
+        // TTS Integration
+        const TTS_API_URL = 'http://localhost:5001';
+        let currentAudio = null;
+        let isPlaying = false;
+
+        // TTS Button Event Listener
+        document.getElementById('ttsButton').addEventListener('click', async function() {
+            const button = this;
+            const responseText = document.getElementById('resultContent').textContent;
+            
+            if (!responseText || responseText.trim().length === 0) {
+                alert('No text to read!');
+                return;
+            }
+
+            if (isPlaying) {
+                stopTTS();
+                return;
+            }
+
+            try {
+                button.disabled = true;
+                button.innerHTML = '⏳ Loading...';
+
+                // Try Azure TTS first
+                const response = await fetch(`${TTS_API_URL}/api/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: responseText,
+                        voice: 'en-US-AriaNeural',
+                        preprocess: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('audio')) {
+                    // Azure TTS returned audio
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.onended = () => stopTTS();
+                    currentAudio.onerror = () => fallbackToBrowserTTS(responseText, button);
+                    
+                    await currentAudio.play();
+                    setPlayingState(true, button);
+                    
+                } else {
+                    // Fallback response from API
+                    const data = await response.json();
+                    if (data.fallback) {
+                        fallbackToBrowserTTS(data.text, button);
+                    } else {
+                        throw new Error(data.error || 'TTS failed');
+                    }
+                }
+
+            } catch (error) {
+                console.error('TTS error:', error);
+                // Fallback to browser TTS
+                fallbackToBrowserTTS(responseText, button);
+            }
+        });
+
+        function fallbackToBrowserTTS(text, button) {
+            if (!('speechSynthesis' in window)) {
+                alert('Text-to-speech not supported in this browser');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+                return;
+            }
+
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                // Try to find a good voice
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+                
+                utterance.onend = () => stopTTS();
+                utterance.onerror = () => {
+                    alert('Speech synthesis failed');
+                    stopTTS();
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                setPlayingState(true, button);
+                
+            } catch (error) {
+                console.error('Browser TTS error:', error);
+                alert('Speech synthesis failed');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+            }
+        }
+
+        function setPlayingState(playing, button) {
+            isPlaying = playing;
+            if (playing) {
+                button.innerHTML = '⏹️ Stop';
+                button.disabled = false;
+            } else {
+                button.innerHTML = '🔊 Listen';
+                button.disabled = false;
+            }
+        }
+
+        function stopTTS() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            
+            setPlayingState(false, document.getElementById('ttsButton'));
+        }
+    </script>
+</body>
+</html>

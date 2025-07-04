@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interest-Based Learning Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .content {
+            padding: 50px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-section.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-section label {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-section label::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .form-input {
+            padding: 18px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .form-input::placeholder {
+            color: #a0a6b1;
+        }
+
+        .analogy-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .examples-section {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+            border: 1px solid #c3e6cb;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 35px;
+        }
+
+        .examples-section h4 {
+            color: #155724;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .examples-section h4::before {
+            content: "💡";
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .example-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+            font-size: 0.95rem;
+        }
+
+        .example-item strong {
+            color: #155724;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .submit-btn:disabled::before {
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .loading.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .response-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            display: none;
+        }
+
+        .response-section.show {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .response-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .response-section h3::before {
+            content: "🎓";
+            margin-right: 12px;
+            font-size: 1.6rem;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .tts-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tts-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-content {
+            line-height: 1.8;
+            color: #555;
+            white-space: pre-wrap;
+            font-size: 1.05rem;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+            border-left-color: #dc3545;
+        }
+
+        .error h3::before {
+            content: "⚠️";
+        }
+
+        .error .response-content {
+            background: #fff5f5;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .content {
+                padding: 30px;
+            }
+            
+            .header {
+                padding: 30px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .quick-fill-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .quick-fill-btn {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-fill-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Interest-Based Learning</h1>
+            <p>Transform complex concepts into engaging analogies that match your interests!<br>
+            Learn programming and computer science through things you love.</p>
+        </div>
+        
+        <div class="content">
+            <div class="examples-section">
+                <h4>Example Learning Combinations</h4>
+                <div class="examples-grid">
+                    <div class="example-item">
+                        <strong>Concept:</strong> Object-Oriented Programming<br>
+                        <strong>Subject:</strong> Computer Science<br>
+                        <strong>Analogy:</strong> Video game store management
+                    </div>
+                    <div class="example-item">
+                        <strong>Concept:</strong> Database normalization<br>
+                        <strong>Subject:</strong> Data Science<br>
+                        <strong>Analogy:</strong> Organizing a music collection
+                    </div>
+                    <div class="example-item">
+                        <strong>Concept:</strong> Machine Learning<br>
+                        <strong>Subject:</strong> Artificial Intelligence<br>
+                        <strong>Analogy:</strong> Teaching a pet new tricks
+                    </div>
+                    <div class="example-item">
+                        <strong>Concept:</strong> Network protocols<br>
+                        <strong>Subject:</strong> Computer Networks<br>
+                        <strong>Analogy:</strong> Restaurant ordering system
+                    </div>
+                </div>
+            </div>
+
+            <form id="learningForm">
+                <div class="form-grid">
+                    <div class="form-section">
+                        <label for="concept">What concept do you want to learn?</label>
+                        <input 
+                            type="text" 
+                            id="concept" 
+                            name="concept" 
+                            class="form-input"
+                            placeholder="e.g., recursion, sorting algorithms, APIs..."
+                            required
+                        >
+                        <div class="quick-fill-buttons">
+                            <button type="button" class="quick-fill-btn" onclick="fillConcept('recursion')">Recursion</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillConcept('binary search')">Binary Search</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillConcept('data structures')">Data Structures</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label for="subject">What subject area?</label>
+                        <input 
+                            type="text" 
+                            id="subject" 
+                            name="subject" 
+                            class="form-input"
+                            placeholder="e.g., Computer Science, Mathematics, Physics..."
+                            required
+                        >
+                        <div class="quick-fill-buttons">
+                            <button type="button" class="quick-fill-btn" onclick="fillSubject('Computer Science')">Computer Science</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillSubject('Data Science')">Data Science</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillSubject('Software Engineering')">Software Engineering</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section full-width">
+                        <label for="analogy">What interests you? (We'll use this for analogies)</label>
+                        <textarea 
+                            id="analogy" 
+                            name="analogy" 
+                            class="form-input analogy-input"
+                            placeholder="Describe something you're passionate about: sports, cooking, music, movies, games, art, travel, etc. The more specific, the better the analogy!"
+                            required
+                        ></textarea>
+                        <div class="quick-fill-buttons">
+                            <button type="button" class="quick-fill-btn" onclick="fillAnalogy('cooking and recipe management')">Cooking</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillAnalogy('sports team management')">Sports</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillAnalogy('music production and mixing')">Music</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillAnalogy('movie production and storytelling')">Movies</button>
+                            <button type="button" class="quick-fill-btn" onclick="fillAnalogy('gardening and plant care')">Gardening</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🚀 Generate Personalized Explanation
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>🎨 Crafting your personalized learning experience...</p>
+            </div>
+
+            <div class="response-section" id="responseSection">
+                <div class="response-header">
+                    <h3>🎓 Your Personalized Learning Experience</h3>
+                    <button id="ttsButton" class="tts-button" style="display: none;">
+                        🔊 Listen
+                    </button>
+                </div>
+                <div class="response-content" id="responseContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000'; // Change this to your Flask app URL
+
+        // Quick fill functions
+        function fillConcept(value) {
+            document.getElementById('concept').value = value;
+        }
+
+        function fillSubject(value) {
+            document.getElementById('subject').value = value;
+        }
+
+        function fillAnalogy(value) {
+            document.getElementById('analogy').value = value;
+        }
+
+        document.getElementById('learningForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const concept = document.getElementById('concept').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const analogy = document.getElementById('analogy').value.trim();
+
+            if (!concept || !subject || !analogy) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const responseSection = document.getElementById('responseSection');
+            const responseContent = document.getElementById('responseContent');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🎨 Creating Your Learning Experience...';
+            loading.classList.add('show');
+            responseSection.classList.remove('show');
+            responseSection.classList.remove('error');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/interest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        concept: concept,
+                        subject: subject,
+                        analogy: analogy
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show the AI response
+                    if (data.response) {
+                        responseContent.textContent = data.response;
+                        responseSection.classList.add('show');
+                        // Show TTS button after successful response
+                        document.getElementById('ttsButton').style.display = 'flex';
+                    } else {
+                        responseContent.textContent = 'No response received from the AI assistant.';
+                        responseSection.classList.add('show', 'error');
+                    }
+                } else {
+                    // Error from API
+                    responseContent.textContent = `Error: ${data.error || 'Something went wrong'}`;
+                    responseSection.classList.add('show', 'error');
+                }
+
+            } catch (error) {
+                // Network or other error
+                console.error('Error:', error);
+                responseContent.textContent = `Network Error: ${error.message}. Make sure your Flask app is running on ${API_BASE_URL}`;
+                responseSection.classList.add('show', 'error');
+            } finally {
+                // Reset UI state
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Generate Personalized Explanation';
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('analogy').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(100, this.scrollHeight) + 'px';
+        });
+
+        // Allow Ctrl+Enter to submit
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('learningForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Add some interactive animations
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+
+        // TTS Integration
+        const TTS_API_URL = 'http://localhost:5001';
+        let currentAudio = null;
+        let isPlaying = false;
+
+        // TTS Button Event Listener
+        document.getElementById('ttsButton').addEventListener('click', async function() {
+            const button = this;
+            const responseText = document.getElementById('responseContent').textContent;
+            
+            if (!responseText || responseText.trim().length === 0) {
+                alert('No text to read!');
+                return;
+            }
+
+            if (isPlaying) {
+                stopTTS();
+                return;
+            }
+
+            try {
+                button.disabled = true;
+                button.innerHTML = '⏳ Loading...';
+
+                // Try Azure TTS first
+                const response = await fetch(`${TTS_API_URL}/api/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: responseText,
+                        voice: 'en-US-AriaNeural',
+                        preprocess: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('audio')) {
+                    // Azure TTS returned audio
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.onended = () => stopTTS();
+                    currentAudio.onerror = () => fallbackToBrowserTTS(responseText, button);
+                    
+                    await currentAudio.play();
+                    setPlayingState(true, button);
+                    
+                } else {
+                    // Fallback response from API
+                    const data = await response.json();
+                    if (data.fallback) {
+                        fallbackToBrowserTTS(data.text, button);
+                    } else {
+                        throw new Error(data.error || 'TTS failed');
+                    }
+                }
+
+            } catch (error) {
+                console.error('TTS error:', error);
+                // Fallback to browser TTS
+                fallbackToBrowserTTS(responseText, button);
+            }
+        });
+
+        function fallbackToBrowserTTS(text, button) {
+            if (!('speechSynthesis' in window)) {
+                alert('Text-to-speech not supported in this browser');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+                return;
+            }
+
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                // Try to find a good voice
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+                
+                utterance.onend = () => stopTTS();
+                utterance.onerror = () => {
+                    alert('Speech synthesis failed');
+                    stopTTS();
+                };
+                
+                window.speechSynthesis.speak(utterance);
+                setPlayingState(true, button);
+                
+            } catch (error) {
+                console.error('Browser TTS error:', error);
+                alert('Speech synthesis failed');
+                button.disabled = false;
+                button.innerHTML = '🔊 Listen';
+            }
+        }
+
+        function setPlayingState(playing, button) {
+            isPlaying = playing;
+            if (playing) {
+                button.innerHTML = '⏹️ Stop';
+                button.disabled = false;
+            } else {
+                button.innerHTML = '🔊 Listen';
+                button.disabled = false;
+            }
+        }
+
+        function stopTTS() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            
+            setPlayingState(false, document.getElementById('ttsButton'));
+        }
+    </script>
+</body>
+</html>
